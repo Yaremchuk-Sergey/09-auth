@@ -1,59 +1,60 @@
 "use client";
 
-import type { Note } from "@/types/note";
-import { deleteNote } from "../../lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteNote } from "@/lib/api/clientApi";
 import Link from "next/link";
+import { Note } from "@/types/note";
+import toast, { Toaster } from "react-hot-toast";
 import css from "./NoteList.module.css";
 
 interface NoteListProps {
-  notes: Note[];
+  items: Note[];
 }
 
-const NoteList = ({ notes }: NoteListProps) => {
+export default function NoteList({ items }: NoteListProps) {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation({
-    mutationFn: (id: string) => deleteNote(id),
-    onSuccess: () => {
+  const { mutate } = useMutation({
+    mutationFn: deleteNote,
+    onSuccess() {
+      toast.success("Your note has been deleted.");
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
-    onError: (error: Error) => {
-      console.error(error.message);
+    onError() {
+      toast.error("Sorry, something is wrong. Try again.");
     },
   });
 
   return (
-    <ul className={css.list}>
-      {notes.map((note) => (
-        <li
-          key={note.id}
-          className={css.listItem}
-        >
-          <h2 className={css.title}>{note.title}</h2>
-          <p className={css.content}>{note.content}</p>
-          <div className={css.footer}>
-            <span className={css.tag}>{note.tag}</span>
-
-            {/* 🔹 посилання на деталі нотатки */}
-            <Link
-              href={`/notes/${note.id}`}
-              className={css.button}
-            >
-              View details
-            </Link>
-
-            <button
-              className={css.button}
-              onClick={() => mutation.mutate(note.id)}
-            >
-              Delete
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className={css.list}>
+        {items.map((item) => (
+          <li
+            key={item.id}
+            className={css.listItem}
+          >
+            <h2 className={css.title}>{item.title}</h2>
+            <p className={css.content}>{item.content}</p>
+            <div className={css.footer}>
+              <span className={css.tag}>{item.tag}</span>
+              <Link
+                href={`/notes/${item.id}`}
+                className={css.button}
+                scroll={false}
+              >
+                View details
+              </Link>
+              <button
+                onClick={() => mutate(item.id)}
+                className={css.button}
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <Toaster position="top-right" />
+    </>
   );
-};
-
-export default NoteList;
+}
